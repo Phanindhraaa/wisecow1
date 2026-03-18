@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: wisecow-service
+  namespace: wisecow
+  labels:
+    app: wisecow
+    app.kubernetes.io/name: wisecow
+spec:
+  type: NodePort              # LoadBalancer is not supported in Minikube without tunnel
+  selector:
+    app: wisecow
+  ports:
+    - name: https
+      protocol: TCP
+      port: 443               # External port (HTTPS)
+      targetPort: 4499        # Container port
+      nodePort: 30443         # Fixed NodePort – access via minikube ip

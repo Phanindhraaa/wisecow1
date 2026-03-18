@@ -1,0 +1,165 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# KubeArmor Zero-Trust Policy for Wisecow
+#
+# Strategy: default-deny everything, then selectively allow only the exact
+# binaries, files, and network operations the wisecow.sh script requires.
+#
+# Apply:  kubectl apply -f kubearmor/wisecow-zero-trust-policy.yaml
+# Verify: karmor log --namespace wisecow
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Policy 1: Restrict Process Execution ──────────────────────────────────────
+apiVersion: security.kubearmor.com/v1
+kind: KubeArmorPolicy
+metadata:
+  name: wisecow-restrict-processes
+  namespace: wisecow
+spec:
+  selector:
+    matchLabels:
+      app: wisecow
+
+  process:
+    matchPaths:
+      # Explicitly ALLOW only the processes wisecow needs
+      - path: /bin/bash
+      - path: /usr/bin/bash
+      - path: /bin/sh
+      - path: /usr/bin/fortune
+      - path: /usr/games/fortune
+      - path: /usr/bin/cowsay
+      - path: /usr/games/cowsay
+      - path: /usr/bin/nc
+      - path: /bin/nc
+      - path: /usr/bin/openssl
+      - path: /bin/cat
+      - path: /bin/echo
+      - path: /usr/bin/tee
+    action: Allow
+
+  # Block all processes NOT in the allow list above
+  # (KubeArmor enforces default-deny when action:Block is set on matchDirectories)
+  process:
+    matchDirectories:
+      - dir: /
+        recursive: true
+    action: Block
+
+---
+# ── Policy 2: Restrict File Access ────────────────────────────────────────────
+apiVersion: security.kubearmor.com/v1
+kind: KubeArmorPolicy
+metadata:
+  name: wisecow-restrict-file-access
+  namespace: wisecow
+spec:
+  selector:
+    matchLabels:
+      app: wisecow
+
+  file:
+    matchPaths:
+      # Allow reading the application script
+      - path: /app/wisecow.sh
+        readOnly: true
+      # Allow reading TLS certificates (read-only mount)
+      - path: /app/tls/tls.crt
+        readOnly: true
+      - path: /app/tls/tls.key
+        readOnly: true
+      # Allow fortune data files
+      - path: /usr/share/games/fortunes/
+        readOnly: true
+        dir: true
+        recursive: true
+      # Allow cowsay cow files
+      - path: /usr/share/cowsay/
+        readOnly: true
+        dir: true
+        recursive: true
+      # Allow standard system libraries
+      - path: /lib/
+        readOnly: true
+        dir: true
+        recursive: true
+      - path: /usr/lib/
+        readOnly: true
+        dir: true
+        recursive: true
+      - path: /etc/ld.so.cache
+        readOnly: true
+      - path: /etc/ssl/certs/
+        readOnly: true
+        dir: true
+        recursive: true
+    action: Allow
+
+  # Block writes to sensitive directories
+  file:
+    matchDirectories:
+      - dir: /etc/
+        recursive: true
+      - dir: /bin/
+        recursive: true
+      - dir: /sbin/
+        recursive: true
+      - dir: /usr/bin/
+        recursive: true
+      - dir: /root/
+        recursive: true
+      - dir: /proc/
+        recursive: true
+    action: Block
+
+---
+# ── Policy 3: Restrict Network Access ─────────────────────────────────────────
+apiVersion: security.kubearmor.com/v1
+kind: KubeArmorPolicy
+metadata:
+  name: wisecow-restrict-network
+  namespace: wisecow
+spec:
+  selector:
+    matchLabels:
+      app: wisecow
+
+  network:
+    matchProtocols:
+      # Allow only TCP (HTTPS / TLS on port 4499)
+      - protocol: tcp
+      # Block raw sockets, UDP (not needed by wisecow)
+      - protocol: raw
+    action: Block   # block raw; TCP is implicitly allowed by not blocking it
+
+---
+# ── Policy 4: Block Privilege Escalation & Capability Abuse ───────────────────
+apiVersion: security.kubearmor.com/v1
+kind: KubeArmorPolicy
+metadata:
+  name: wisecow-block-privilege-escalation
+  namespace: wisecow
+spec:
+  selector:
+    matchLabels:
+      app: wisecow
+
+  process:
+    matchPaths:
+      # Block common privilege-escalation / shell escape binaries
+      - path: /usr/bin/sudo
+      - path: /bin/su
+      - path: /usr/bin/su
+      - path: /usr/bin/passwd
+      - path: /usr/bin/chsh
+      - path: /usr/bin/chfn
+      - path: /usr/bin/newgrp
+      - path: /usr/bin/pkexec
+      - path: /usr/bin/python3
+      - path: /usr/bin/python
+      - path: /usr/bin/perl
+      - path: /usr/bin/curl
+      - path: /usr/bin/wget
+      - path: /usr/bin/apt
+      - path: /usr/bin/apt-get
+      - path: /usr/bin/dpkg
+    action: Block

@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wisecow
+  namespace: wisecow
+  labels:
+    app: wisecow
+    app.kubernetes.io/name: wisecow
+    app.kubernetes.io/version: "1.0.0"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: wisecow
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: wisecow
+    spec:
+      # ── Security context for the pod ──────────────────────────
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+
+      containers:
+        - name: wisecow
+          # Image is updated automatically by the CI/CD pipeline
+          image: ghcr.io/<YOUR_GITHUB_USERNAME>/wisecow:latest
+          imagePullPolicy: Always
+          ports:
+            - name: https
+              containerPort: 4499
+              protocol: TCP
+
+          # ── Environment ──────────────────────────────────────
+          env:
+            - name: TLS_CERT
+              value: /app/tls/tls.crt
+            - name: TLS_KEY
+              value: /app/tls/tls.key
+
+          # ── Resource limits ──────────────────────────────────
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "64Mi"
+            limits:
+              cpu: "250m"
+              memory: "128Mi"
+
+          # ── Health probes ────────────────────────────────────
+          livenessProbe:
+            tcpSocket:
+              port: 4499
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            failureThreshold: 3
+
+          readinessProbe:
+            tcpSocket:
+              port: 4499
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+          # ── TLS certificate volume mount ─────────────────────
+          volumeMounts:
+            - name: tls-certs
+              mountPath: /app/tls
+              readOnly: true
+
+      # ── Volumes ───────────────────────────────────────────────
+      volumes:
+        - name: tls-certs
+          secret:
+            secretName: wisecow-tls
+            items:
+              - key: tls.crt
+                path: tls.crt
+              - key: tls.key
+                path: tls.key

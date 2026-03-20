@@ -242,3 +242,4 @@ Capture a screenshot of the `karmor log` output showing blocked events and commi
 ## License
 
 Apache 2.0 — same as the upstream Wisecow project.
+# Wisecow - AccuKnox DevOps Assessment

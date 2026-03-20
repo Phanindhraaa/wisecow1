@@ -68,7 +68,7 @@ check_cpu() {
     if [[ -z "$idle" ]]; then
         idle=$(top -bn1 | grep "%Cpu" | awk '{print $8}')
     fi
-    local usage; usage=$(awk "BEGIN{printf \"%.0f\", 100 - ${idle}}")
+    local usage; usage=$(awk "BEGIN{printf \"%.0f\", 100 - ${idle//,/}}")
 
     if (( usage >= CPU_THRESHOLD )); then
         log ALERT "CPU usage is ${usage}% (threshold: ${CPU_THRESHOLD}%)"

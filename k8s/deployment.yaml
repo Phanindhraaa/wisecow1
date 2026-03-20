@@ -1,87 +1,117 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: wisecow
-  namespace: wisecow
+  annotations:
+    deployment.kubernetes.io/revision: "5"
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"labels":{"app":"wisecow","app.kubernetes.io/name":"wisecow","app.kubernetes.io/version":"1.0.0"},"name":"wisecow","namespace":"wisecow"},"spec":{"replicas":2,"selector":{"matchLabels":{"app":"wisecow"}},"strategy":{"rollingUpdate":{"maxSurge":1,"maxUnavailable":0},"type":"RollingUpdate"},"template":{"metadata":{"labels":{"app":"wisecow"}},"spec":{"containers":[{"env":[{"name":"TLS_CERT","value":"/app/tls/tls.crt"},{"name":"TLS_KEY","value":"/app/tls/tls.key"}],"image":"wisecow1.1","imagePullPolicy":"Never","livenessProbe":{"failureThreshold":3,"initialDelaySeconds":15,"periodSeconds":20,"tcpSocket":{"port":4499}},"name":"wisecow","ports":[{"containerPort":4499,"name":"https","protocol":"TCP"}],"readinessProbe":{"initialDelaySeconds":5,"periodSeconds":10,"tcpSocket":{"port":4499}},"resources":{"limits":{"cpu":"250m","memory":"128Mi"},"requests":{"cpu":"100m","memory":"64Mi"}},"volumeMounts":[{"mountPath":"/app/tls","name":"tls-certs","readOnly":true}]}],"securityContext":{"fsGroup":1000,"runAsGroup":1000,"runAsNonRoot":true,"runAsUser":1000},"volumes":[{"name":"tls-certs","secret":{"items":[{"key":"tls.crt","path":"tls.crt"},{"key":"tls.key","path":"tls.key"}],"secretName":"wisecow-tls"}}]}}}}
+  creationTimestamp: "2026-03-18T06:04:34Z"
+  generation: 5
   labels:
     app: wisecow
     app.kubernetes.io/name: wisecow
-    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/version: 1.0.0
+  name: wisecow
+  namespace: wisecow
+  resourceVersion: "90369"
+  uid: 759090b8-2c8a-4726-a4ae-eb49f03f1838
 spec:
+  progressDeadlineSeconds: 600
   replicas: 2
+  revisionHistoryLimit: 10
   selector:
     matchLabels:
       app: wisecow
   strategy:
-    type: RollingUpdate
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 0
+    type: RollingUpdate
   template:
     metadata:
+      annotations:
+        kubectl.kubernetes.io/restartedAt: "2026-03-20T06:23:36Z"
       labels:
         app: wisecow
     spec:
-      # ── Security context for the pod ──────────────────────────
+      containers:
+      - env:
+        - name: TLS_CERT
+          value: /app/tls/tls.crt
+        - name: TLS_KEY
+          value: /app/tls/tls.key
+        image: wisecow1.1
+        imagePullPolicy: Never
+        livenessProbe:
+          failureThreshold: 3
+          initialDelaySeconds: 15
+          periodSeconds: 20
+          successThreshold: 1
+          tcpSocket:
+            port: 4499
+          timeoutSeconds: 1
+        name: wisecow
+        ports:
+        - containerPort: 4499
+          name: https
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          tcpSocket:
+            port: 4499
+          timeoutSeconds: 1
+        resources:
+          limits:
+            cpu: 250m
+            memory: 128Mi
+          requests:
+            cpu: 100m
+            memory: 64Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /app/tls
+          name: tls-certs
+          readOnly: true
+        workingDir: /tmp
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
       securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
         runAsNonRoot: true
         runAsUser: 1000
-        runAsGroup: 1000
-        fsGroup: 1000
-
-      containers:
-        - name: wisecow
-          # Image is updated automatically by the CI/CD pipeline
-          image: ghcr.io/<YOUR_GITHUB_USERNAME>/wisecow:latest
-          imagePullPolicy: Always
-          ports:
-            - name: https
-              containerPort: 4499
-              protocol: TCP
-
-          # ── Environment ──────────────────────────────────────
-          env:
-            - name: TLS_CERT
-              value: /app/tls/tls.crt
-            - name: TLS_KEY
-              value: /app/tls/tls.key
-
-          # ── Resource limits ──────────────────────────────────
-          resources:
-            requests:
-              cpu: "100m"
-              memory: "64Mi"
-            limits:
-              cpu: "250m"
-              memory: "128Mi"
-
-          # ── Health probes ────────────────────────────────────
-          livenessProbe:
-            tcpSocket:
-              port: 4499
-            initialDelaySeconds: 15
-            periodSeconds: 20
-            failureThreshold: 3
-
-          readinessProbe:
-            tcpSocket:
-              port: 4499
-            initialDelaySeconds: 5
-            periodSeconds: 10
-
-          # ── TLS certificate volume mount ─────────────────────
-          volumeMounts:
-            - name: tls-certs
-              mountPath: /app/tls
-              readOnly: true
-
-      # ── Volumes ───────────────────────────────────────────────
+      terminationGracePeriodSeconds: 30
       volumes:
-        - name: tls-certs
-          secret:
-            secretName: wisecow-tls
-            items:
-              - key: tls.crt
-                path: tls.crt
-              - key: tls.key
-                path: tls.key
+      - name: tls-certs
+        secret:
+          defaultMode: 420
+          items:
+          - key: tls.crt
+            path: tls.crt
+          - key: tls.key
+            path: tls.key
+          secretName: wisecow-tls
+status:
+  availableReplicas: 2
+  conditions:
+  - lastTransitionTime: "2026-03-19T18:39:09Z"
+    lastUpdateTime: "2026-03-19T18:39:09Z"
+    message: Deployment has minimum availability.
+    reason: MinimumReplicasAvailable
+    status: "True"
+    type: Available
+  - lastTransitionTime: "2026-03-18T06:04:34Z"
+    lastUpdateTime: "2026-03-20T06:40:27Z"
+    message: ReplicaSet "wisecow-f748cb5f5" has successfully progressed.
+    reason: NewReplicaSetAvailable
+    status: "True"
+    type: Progressing
+  observedGeneration: 5
+  readyReplicas: 2
+  replicas: 2
+  updatedReplicas: 2

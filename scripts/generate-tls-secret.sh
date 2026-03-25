@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
-# ─────────────────────────────────────────────────────────────────────────────
 # generate-tls-secret.sh
 # Generates a self-signed TLS certificate and creates a Kubernetes secret.
 # For production use cert-manager or a real CA instead.
-# ─────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
 
 DOMAIN="${1:-wisecow.example.com}"

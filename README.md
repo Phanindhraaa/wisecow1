@@ -46,7 +46,7 @@ wisecow-k8s/
 #### 1 – Clone & copy the app
 
 ```bash
-git clone https://github.com/<YOUR_USERNAME>/wisecow-k8s.git
+git clone https://github.com/phanindhraaa/wisecow-k8s.git
 cd wisecow-k8s
 
 # Copy wisecow.sh from the upstream repo
